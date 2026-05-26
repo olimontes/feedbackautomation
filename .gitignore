@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+
+# User/editor files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Local environment/config overrides
+appsettings.Development.json
+*.env
+
+# Import/source data files
+*.xlsx
+*.xls
+*.csv
+
+# Logs
+*.log

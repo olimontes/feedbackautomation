@@ -23,8 +23,7 @@ public class FeedbackService
         {
             var mensagem = await _iaService.GerarMensagemAsync(
                 nomeCliente,
-                feedback.NivelSatisfacao,
-                feedback.EquipeDescricao
+                feedback.NivelSatisfacao
             );
 
             feedback.MensagemGeradaIA = mensagem;

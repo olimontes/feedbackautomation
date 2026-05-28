@@ -1,4 +1,3 @@
-using FeedbackAutomation.Utils;
 using System.Text;
 using System.Text.Json;
 
@@ -17,19 +16,9 @@ public class EvolutionService
 
     public async Task SendMessage(string number, string text)
     {
-        var telefone = TelefoneHelper.NormalizarTelefoneWhatsApp(number);
-
-        if (!TelefoneHelper.TelefoneValidoParaWhatsApp(telefone))
-        {
-            throw new ArgumentException(
-                "Telefone invalido para WhatsApp.",
-                nameof(number)
-            );
-        }
-
         var payload = new
         {
-            number = telefone,
+            number,
             text
         };
 

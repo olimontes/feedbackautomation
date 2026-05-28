@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using FeedbackAutomation.AI;
 using FeedbackAutomation.Data;
 using FeedbackAutomation.Entities;
 
@@ -7,13 +8,18 @@ namespace FeedbackAutomation.Imports;
 public class ExcelImporter
 {
     private readonly AppDbContext _context;
+    private readonly IAService _iaService;
 
-    public ExcelImporter(AppDbContext context)
+    public ExcelImporter(
+        AppDbContext context,
+        IAService iaService
+    )
     {
         _context = context;
+        _iaService = iaService;
     }
 
-    public void Importar(string caminhoArquivo)
+    public async Task ImportarAsync(string caminhoArquivo)
     {
         using var workbook = new XLWorkbook(caminhoArquivo);
 
@@ -38,11 +44,11 @@ public class ExcelImporter
                     continue;
                 }
 
-                // Verifica se o cliente já existe
+                // Busca cliente existente
                 var cliente = _context.Clientes
                     .FirstOrDefault(c => c.Cnpj == cnpj);
 
-                // Se não existir, cria
+                // Cria cliente se não existir
                 if (cliente == null)
                 {
                     cliente = new Cliente
@@ -56,42 +62,57 @@ public class ExcelImporter
 
                     _context.Clientes.Add(cliente);
 
-                    // Salva para gerar o ID
-                    _context.SaveChanges();
+                    await _context.SaveChangesAsync();
+                }
+
+                var nivelSatisfacao = row.Cell(7).GetValue<int>();
+
+                // Trata data
+                var dataTexto = row.Cell(8).GetValue<string>();
+
+                var data = DateTime.Parse(dataTexto);
+
+                var dataUtc = DateTime.SpecifyKind(
+                    data,
+                    DateTimeKind.Utc
+                );
+
+                // Geração IA
+                string? mensagemIA = null;
+
+                if (nivelSatisfacao <= 6)
+                {
+                    mensagemIA = await _iaService.GerarMensagemAsync(
+                        cliente.Responsavel,
+                        nivelSatisfacao
+                    );
                 }
 
                 var feedback = new Feedback
                 {
                     ClienteId = cliente.Id,
                     EquipeDescricao = row.Cell(6).GetValue<string>(),
-                    NivelSatisfacao = row.Cell(7).GetValue<int>(),
-                    DataVerificacaoQualidade = DateTime.SpecifyKind(
-                        DateTime.Parse(row.Cell(8).GetValue<string>()),
-                        DateTimeKind.Utc
-                    )
+                    NivelSatisfacao = nivelSatisfacao,
+                    DataVerificacaoQualidade = dataUtc,
+                    MensagemGeradaIA = mensagemIA
                 };
 
                 _context.Feedbacks.Add(feedback);
 
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
-                Console.WriteLine($"Linha {linha} importada com sucesso.");
+                Console.WriteLine(
+                    $"Linha {linha} importada com sucesso."
+                );
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro na linha {linha}: {ex.Message}");
+                Console.WriteLine(
+                    $"Erro na linha {linha}: {ex.Message}"
+                );
             }
         }
 
         Console.WriteLine("Importação finalizada.");
     }
 }
-
-
-
-
-
-
-
-
-

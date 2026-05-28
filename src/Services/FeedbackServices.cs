@@ -14,11 +14,15 @@ public class FeedbackService
         _iaService = iaService;
     }
 
-    public async Task ProcessarFeedbackAsync(Feedback feedback)
+    public async Task ProcessarFeedbackAsync(
+        Feedback feedback,
+        string nomeCliente
+    )
     {
         if (feedback.NivelSatisfacao <= 6)
         {
             var mensagem = await _iaService.GerarMensagemAsync(
+                nomeCliente,
                 feedback.NivelSatisfacao
             );
 
